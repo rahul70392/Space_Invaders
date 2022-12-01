@@ -14,6 +14,7 @@ use space_invaders::frame::new_frame;
 use space_invaders::render;
 use space_invaders::player::Player;
 use space_invaders::frame::Drawable;
+use space_invaders::invaders::Invaders; 
 
 fn main() -> Result <(), Box<dyn Error>> {
     let mut audio = Audio::new();
@@ -47,6 +48,7 @@ fn main() -> Result <(), Box<dyn Error>> {
 
     let mut player = Player::new();
     let mut instant = Instant::now();
+    let mut invaders = Invaders::new();
 
     //Game Loop
     'gameloop : loop {
@@ -78,9 +80,13 @@ fn main() -> Result <(), Box<dyn Error>> {
 
         //updates
         player.update(delta);
+        if invaders.update(delta) {
+            audio.play("move");
+        }
 
         //Draw and render
         player.draw(&mut curr_frame);
+        invaders.draw(&mut curr_frame);
         let _ = render_tx.send(curr_frame);
         thread::sleep(Duration::from_millis(1));
     }
