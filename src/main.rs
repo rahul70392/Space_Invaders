@@ -1,6 +1,6 @@
 use std::error::Error;
 use rusty_audio::Audio;
-use std::{ io,thread, sync::mpsc::{self}};
+use std::{ io,thread, sync::mpsc::{self}, time::{Duration, Instant},};
 use crossterm::{terminal,
 terminal::EnterAlternateScreen,
 terminal::LeaveAlternateScreen,
@@ -9,7 +9,7 @@ cursor::Hide,
 cursor::Show,
 event::{self, Event, KeyCode},
 };
-use core::time::Duration;
+// use core::time::Duration;
 use space_invaders::frame::new_frame;
 use space_invaders::render;
 use space_invaders::player::Player;
@@ -40,15 +40,18 @@ fn main() -> Result <(), Box<dyn Error>> {
                 Ok(x) => x,
                 Err(_) => break,
             };
-            render::render(&mut stdout, &last_frame, &curr_frame, false );
+            render::render(&mut stdout, &last_frame, &curr_frame, false);
             last_frame = curr_frame;
         }
     });
 
-    //Game Loop
-    'gameloop : loop{
+    let mut player = Player::new();
+    let mut instant = Instant::now();
 
-        let mut player = Player::new();
+    //Game Loop
+    'gameloop : loop {
+        let delta = instant.elapsed();
+        instant = Instant::now();
 
         //per-frame initialization section
         let mut curr_frame = new_frame();
@@ -59,6 +62,11 @@ fn main() -> Result <(), Box<dyn Error>> {
                 match key_event.code {
                     KeyCode::Left => player.move_left(),
                     KeyCode::Right => player.move_right(),
+                    KeyCode::Char(' ') | KeyCode::Enter =>{
+                        if player.shoot() {
+                            audio.play("pew");
+                        }
+                    }
                     KeyCode::Esc | KeyCode::Char('q') => { 
                         audio.play("lose");
                         break 'gameloop;
@@ -67,6 +75,9 @@ fn main() -> Result <(), Box<dyn Error>> {
                 }
             }
         }
+
+        //updates
+        player.update(delta);
 
         //Draw and render
         player.draw(&mut curr_frame);
